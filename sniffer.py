@@ -34,20 +34,10 @@ if __name__ == '__main__':
     # setup packet sniffer
     cap = pyshark.LiveCapture(interface='en0', bpf_filter=bpf_filter, \
              only_summaries=True, monitor_mode=False)
-    #cap.sniff(timeout=0) #cap.sniff() to sniff forever (in a thread)
 
     user_list = []    #list of packetData objects
     for ip in args.list_of_IP:
         user_list.append(userData(ip))
-
-    # for i in range(10):
-    #     start_time = time.monotonic()
-    #     cap.sniff(timeout=5)
-    #     print('after ',time.monotonic()-start_time,' seconds')
-    #     print('caplen: ',cap.__len__)
-    #     packets = cap._packets
-    #     print('_packets: ',len(packets))
-    #     cap.clear();
 
     sniff_duration = 3  # 3-second sniffing
     max_iter_count = 5 # end tracking after this much iterations
@@ -71,12 +61,9 @@ if __name__ == '__main__':
             for user in user_list:  #iterate through user user_list
                 if user.ip == pkt.destination:
                     user.bytes_rcvd_per_sec[iter_count] += int(pkt.length)
-                    #print('pkt rcvd: ',int(pkt.length))
                 elif user.ip == pkt.source:
                     user.bytes_sent_per_sec[iter_count] += int(pkt.length)
-                    #print('pkt sent: ',int(pkt.length))
 
-        #            #if delta_time >= sniff_duration:
         for user in user_list: #get time average
             user.bytes_rcvd_per_sec[iter_count] /= delta_time
             user.bytes_sent_per_sec[iter_count] /= delta_time
@@ -90,9 +77,3 @@ if __name__ == '__main__':
             print('\trcvd/s: ',user.bytes_rcvd_per_sec)
             print('\tsent/s: ',user.bytes_sent_per_sec)
             print('\ttime: ',user.time_stamp)
-            # user.bytes_rcvd_per_sec.append(0)
-            # user.bytes_sent_per_sec.append(0)
-            # user.time_stamp.append(0)
-                #if iter_count == max_iter_count:
-                    #break   # will stop iterating through sniffed packets
-                #start_time = time.monotonic()
