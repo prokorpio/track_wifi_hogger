@@ -34,47 +34,65 @@ if __name__ == '__main__':
     # setup packet sniffer
     cap = pyshark.LiveCapture(interface='en0', bpf_filter=bpf_filter, \
              only_summaries=True, monitor_mode=False)
-    cap.sniff(timeout=0) #cap.sniff() to sniff forever (in a thread)
+    #cap.sniff(timeout=0) #cap.sniff() to sniff forever (in a thread)
 
     user_list = []    #list of packetData objects
     for ip in args.list_of_IP:
         user_list.append(userData(ip))
 
+    # for i in range(10):
+    #     start_time = time.monotonic()
+    #     cap.sniff(timeout=5)
+    #     print('after ',time.monotonic()-start_time,' seconds')
+    #     print('caplen: ',cap.__len__)
+    #     packets = cap._packets
+    #     print('_packets: ',len(packets))
+    #     cap.clear();
 
     sniff_duration = 3  # 3-second sniffing
-    iter_count = 0      # 1 sniff duration is one iter count
-    max_iter_count = 60 # end tracking after this much iterations
-    for user in user_list:  #initialize
+    max_iter_count = 5 # end tracking after this much iterations
+    for user in user_list:  #initialize, start at all zero
         user.bytes_rcvd_per_sec.append(0)
         user.bytes_sent_per_sec.append(0)
         user.time_stamp.append(0)
-    start_time = time.monotonic()
-    for pkt in cap: #iterate through sniffed packet
-        for user in user_list:  #iterate through user user_list
-            if user.ip == pkt.destination:
-                user.bytes_rcvd_per_sec[iter_count] += int(pkt.length)
-                print('pkt rcvd: ',int(pkt.length))
-            elif user.ip == pkt.source:
-                user.bytes_sent_per_sec[iter_count] += int(pkt.length)
-                print('pkt sent: ',int(pkt.length))
 
+    for iter_count in range(1,max_iter_count+1):
+        for user in user_list: #extend lists for each sniffing
+            user.bytes_rcvd_per_sec.append(0)
+            user.bytes_sent_per_sec.append(0)
+        start_time = time.monotonic()
+        cap.sniff(timeout=sniff_duration)
         delta_time = time.monotonic() - start_time
-        if delta_time >= sniff_duration:
-            for user in user_list:
-                user.bytes_rcvd_per_sec[iter_count] /= delta_time
-                user.bytes_sent_per_sec[iter_count] /= delta_time
-                user.time_stamp[iter_count] = delta_time
-            #update plot
-            iter_count += 1
-            print('iteration: ', iter_count)
-            for user in user_list:
-                print('IP: ',user.ip)
-                print('\trcvd/s: ',user.bytes_rcvd_per_sec)
-                print('\tsent/s: ',user.bytes_sent_per_sec)
-                print('\ttime: ',user.time_stamp)
-                user.bytes_rcvd_per_sec.append(0)
-                user.bytes_sent_per_sec.append(0)
-                user.time_stamp.append(0)
-            if iter_count == max_iter_count:
-                break   # will stop iterating through sniffed packets
-            start_time = time.monotonic()
+        start_time = time.monotonic()
+        captured_packets = cap._packets
+        print('Iteration: ', iter_count)
+        print('Sniff time: ',delta_time)
+        for pkt in captured_packets: #iterate through all sniffed packet
+            for user in user_list:  #iterate through user user_list
+                if user.ip == pkt.destination:
+                    user.bytes_rcvd_per_sec[iter_count] += int(pkt.length)
+                    #print('pkt rcvd: ',int(pkt.length))
+                elif user.ip == pkt.source:
+                    user.bytes_sent_per_sec[iter_count] += int(pkt.length)
+                    #print('pkt sent: ',int(pkt.length))
+
+        #            #if delta_time >= sniff_duration:
+        for user in user_list: #get time average
+            user.bytes_rcvd_per_sec[iter_count] /= delta_time
+            user.bytes_sent_per_sec[iter_count] /= delta_time
+            user.time_stamp.append(user.time_stamp[-1] + delta_time)
+        #UPDATE PLOT
+        cap.clear()
+
+        for user in user_list:
+            print('Loop Time: ',time.monotonic()-start_time)
+            print('IP: ',user.ip)
+            print('\trcvd/s: ',user.bytes_rcvd_per_sec)
+            print('\tsent/s: ',user.bytes_sent_per_sec)
+            print('\ttime: ',user.time_stamp)
+            # user.bytes_rcvd_per_sec.append(0)
+            # user.bytes_sent_per_sec.append(0)
+            # user.time_stamp.append(0)
+                #if iter_count == max_iter_count:
+                    #break   # will stop iterating through sniffed packets
+                #start_time = time.monotonic()
