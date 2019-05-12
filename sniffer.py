@@ -16,8 +16,10 @@ class userData:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('interface', \
+                        help="network interface to listen to, i.e. 'en0'")
     parser.add_argument("list_of_IP", nargs='+', \
-                        help='space separated IPs to track')
+                        help="space separated IP's to track")
 
     args = parser.parse_args()
 
@@ -32,7 +34,7 @@ if __name__ == '__main__':
         print('\t ',ip)
 
     # setup packet sniffer
-    cap = pyshark.LiveCapture(interface='en0', bpf_filter=bpf_filter, \
+    cap = pyshark.LiveCapture(interface=args.interface, bpf_filter=bpf_filter, \
              only_summaries=True, monitor_mode=False)
 
     user_list = []    #list of packetData objects
