@@ -3,6 +3,8 @@ import argparse
 import matplotlib.pyplot as plt
 import numpy as np
 import time
+from datetime import datetime
+
 
 class userData:
     """ contains info per tracked user"""
@@ -84,7 +86,7 @@ if __name__ == '__main__':
             for user in user_list: #get time average
                 user.bytes_rcvd_per_sec[-1] /= delta_time
                 user.bytes_sent_per_sec[-1] /= delta_time
-                user.time_stamp[-1] = time.monotonic() - start_time
+                user.time_stamp[-1] = datetime.now().strftime('%H:%M:%S')
 
             #UPDATE PLOT
             # graph.clear()   #clear the plot every iteration to give way to the new curves
@@ -99,7 +101,7 @@ if __name__ == '__main__':
             #     plt.grid()
             #
             #     y_max = max(user.bytes_sent_per_sec[-int(window_size/sniff_duration):] + \
-            #         user.bytes_rcvd_per_sec[-int(window_size/sniff_duration):] + [y_default])  #y_max = max(sent or received bytes or y_default | in the past window_size second)
+            #          user.bytes_rcvd_per_sec[-int(window_size/sniff_duration):] + [y_default])  #y_max = max(sent or received bytes or y_default | in the past window_size second)
             #     plt.ylim(0, y_max)
             #     if user.time_stamp[iter_count] > window_size:   #move the window if iter_count reaches end of window
             #         plt.xlim(user.time_stamp[iter_count]-window_size, user.time_stamp[iter_count])
