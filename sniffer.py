@@ -63,8 +63,8 @@ if __name__ == '__main__':
     graph.axis([0, window_size, 0, y_default])  #setting the initial plot dimensions
 
     start_time = time.monotonic()
-    for test in range(2):
-        for iter_count in range(1,max_iter_count+1):
+    try:
+        while True:
             shift_left(user.bytes_rcvd_per_sec)
             shift_left(user.bytes_sent_per_sec)
             shift_left(user.time_stamp)
@@ -74,7 +74,7 @@ if __name__ == '__main__':
             delta_time = time.monotonic() - relative_start_time
             #relative_start_time = time.monotonic()
             captured_packets = cap._packets
-            print('Iteration: ', iter_count)
+            #print('Iteration: ', iter_count)
             # print('Sniff time: ',delta_time)
             for pkt in captured_packets: #iterate through all sniffed packet
                 for user in user_list:  #iterate through user user_list
@@ -119,4 +119,5 @@ if __name__ == '__main__':
                 print('\trcvd/s: ',user.bytes_rcvd_per_sec)
                 print('\tsent/s: ',user.bytes_sent_per_sec)
                 print('\ttime: ',user.time_stamp)
-#
+    except KeyboardInterrupt:
+        print('\nExiting...')
