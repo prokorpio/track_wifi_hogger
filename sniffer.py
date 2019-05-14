@@ -52,12 +52,12 @@ if __name__ == '__main__':
 
     #plotter initialization
     plt.ion()
-    fig = plt.figure()
+    fig = plt.figure(figsize=(10,5))
     graph = fig.add_subplot(111)
-    window_size = int(60*2/sniff_duration) # 5 minutes
+    window_size = int(60*5/sniff_duration) # 5 minutes
     y_default = 100     #when the y-values inside the window < y_default, the y-axis maximum = y_default (i.e. minimum y_axis range)
-    graph.axis([0, window_size, 0, y_default])  #setting the initial plot dimensions
-    #graph.xaxis.set_minor_locator(mdates.SecondLocator())
+    #graph.axis([0, window_size+100, 0, y_default])  #setting the initial plot dimensions
+
     time_now = datetime.fromtimestamp(mktime(time.localtime()))
     for user in user_list:  #initialize/reset, +1 because 0 @ 0th place
         user.bytes_rcvd_per_sec.extend([0]*window_size)
@@ -73,10 +73,7 @@ if __name__ == '__main__':
             relative_start_time = time.monotonic()
             cap.sniff(timeout=sniff_duration)
             delta_time = time.monotonic() - relative_start_time
-            #relative_start_time = time.monotonic()
             captured_packets = cap._packets
-            #print('Iteration: ', iter_count)
-            # print('Sniff time: ',delta_time)
             for pkt in captured_packets: #iterate through all sniffed packet
                 for user in user_list:  #iterate through user user_list
                     if user.ip == pkt.destination:
@@ -95,7 +92,7 @@ if __name__ == '__main__':
             for user in user_list:
                 graph.plot(mdates.date2num(user.time_stamp), user.bytes_sent_per_sec, label=user.ip + ' (sent)')
                 graph.plot(mdates.date2num(user.time_stamp), user.bytes_rcvd_per_sec, label=user.ip + ' (recv)')
-                graph.legend(loc=2) #location = upper left #better if there'd be a list on the side
+                graph.legend(loc='center left', bbox_to_anchor=(0.9, 0.5),fontsize='small')
 
                 plt.title('Wifi Usage per IP')# please add plot title here
                 plt.xlabel('Time')
@@ -105,25 +102,14 @@ if __name__ == '__main__':
 
                 y_max = max(user.bytes_sent_per_sec + user.bytes_rcvd_per_sec + [y_default])  #y_max = max(sent or received bytes or y_default)
                 plt.ylim(0, y_max + int(0.1*y_max))
-                #plt.xlim(user.time_stamp[0], user.time_stamp[-1])
                 graph.xaxis.set_major_locator(mdates.MinuteLocator())
                 graph.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
                 graph.xaxis.set_minor_locator(mdates.SecondLocator(interval=sniff_duration))
-                # if user.time_stamp[0] != 0:   #move the window if list is full
-                #     plt.xlim(user.time_stamp[0], user.time_stamp[-1])
-                # else:
-                #     plt.xlim(0, window_size)
 
                 fig.canvas.draw()
                 plt.pause(0.001) # needed to be able to see plot
 
             cap.clear()
 
-    #         for user in user_list:
-    # #             print('Loop Time: ',time.monotonic()-relative_start_time)
-    # #             print('IP: ',user.ip)
-    #             print('\trcvd/s: ',user.bytes_rcvd_per_sec)
-    #             print('\tsent/s: ',user.bytes_sent_per_sec)
-    #             print('\ttime: ',user.time_stamp)
     except KeyboardInterrupt:
         print('\nExiting...') #better yata if i-exit na lang yung window
