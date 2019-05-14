@@ -3,6 +3,7 @@ import argparse
 import matplotlib.pyplot as plt
 import numpy as np
 import time
+from time import mktime
 from datetime import datetime
 import matplotlib.dates as mdates
 
@@ -47,21 +48,21 @@ if __name__ == '__main__':
     for ip in args.list_of_IP:
         user_list.append(userData(ip))
 
-    sniff_duration = 1  # sniffing time
+    sniff_duration = 2  # sniffing time
 
     #plotter initialization
     plt.ion()
     fig = plt.figure()
     graph = fig.add_subplot(111)
-    window_size = 300*sniff_duration
+    window_size = int(60*2/sniff_duration) # 5 minutes
     y_default = 100     #when the y-values inside the window < y_default, the y-axis maximum = y_default (i.e. minimum y_axis range)
     graph.axis([0, window_size, 0, y_default])  #setting the initial plot dimensions
     #graph.xaxis.set_minor_locator(mdates.SecondLocator())
-
+    time_now = datetime.fromtimestamp(mktime(time.localtime()))
     for user in user_list:  #initialize/reset, +1 because 0 @ 0th place
         user.bytes_rcvd_per_sec.extend([0]*window_size)
         user.bytes_sent_per_sec.extend([0]*window_size)
-        user.time_stamp.extend([datetime.utcnow()]*window_size)
+        user.time_stamp.extend([time_now]*window_size)
     start_time = time.monotonic()
     try:
         while True:
@@ -82,7 +83,7 @@ if __name__ == '__main__':
                         user.bytes_rcvd_per_sec[-1] += int(pkt.length)
                     elif user.ip == pkt.source:
                         user.bytes_sent_per_sec[-1] += int(pkt.length)
-            time_now = datetime.utcnow()
+            time_now = datetime.fromtimestamp(mktime(time.localtime()))
             for user in user_list: #get time average
                 user.bytes_rcvd_per_sec[-1] /= delta_time
                 user.bytes_sent_per_sec[-1] /= delta_time
@@ -96,9 +97,9 @@ if __name__ == '__main__':
                 graph.plot(mdates.date2num(user.time_stamp), user.bytes_rcvd_per_sec, label=user.ip + ' (recv)')
                 graph.legend(loc=2) #location = upper left #better if there'd be a list on the side
 
-                plt.title('Fig. 1')# please add plot title here
-                plt.xlabel('Time (s)')
-                plt.ylabel('Bytes per second (bps)')
+                plt.title('Wifi Usage per IP')# please add plot title here
+                plt.xlabel('Time')
+                plt.ylabel('Bytes per second')
                 plt.grid()
                 plt.gcf().autofmt_xdate()
 
@@ -107,7 +108,7 @@ if __name__ == '__main__':
                 #plt.xlim(user.time_stamp[0], user.time_stamp[-1])
                 graph.xaxis.set_major_locator(mdates.MinuteLocator())
                 graph.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
-                graph.xaxis.set_minor_locator(mdates.SecondLocator(interval=10))
+                graph.xaxis.set_minor_locator(mdates.SecondLocator(interval=sniff_duration))
                 # if user.time_stamp[0] != 0:   #move the window if list is full
                 #     plt.xlim(user.time_stamp[0], user.time_stamp[-1])
                 # else:
