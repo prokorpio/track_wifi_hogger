@@ -16,6 +16,8 @@ class userData:
         self.time_stamp = []
         self.bytes_rcvd_per_sec = []
         self.bytes_sent_per_sec = []
+        self.ave_rcv_rate = []
+        self.ave_snd_rate = []
 
 def shift_left(a_list):
     a_list.append(a_list.pop(0)) #rotate list
@@ -60,9 +62,12 @@ if __name__ == '__main__':
     #graph.axis([0, window_size+100, 0, y_default])  #setting the initial plot dimensions
 
     time_now = datetime.fromtimestamp(mktime(time.localtime()))
+    run_ave_samples = 5
     for user in user_list:  #initialize/reset, +1 because 0 @ 0th place
-        user.bytes_rcvd_per_sec.extend([0]*window_size)
-        user.bytes_sent_per_sec.extend([0]*window_size)
+        user.bytes_rcvd_per_sec.extend([0]*run_ave_samples)
+        user.bytes_sent_per_sec.extend([0]*run_ave_samples)
+        user.ave_rcv_rate.extend([0]*window_size)
+        user.ave_snd_rate.extend([0]*window_size)
         user.time_stamp.extend([time_now]*window_size)
     #start_time = time.monotonic()
     try:
@@ -70,6 +75,8 @@ if __name__ == '__main__':
             for user in user_list:
                 shift_left(user.bytes_rcvd_per_sec)
                 shift_left(user.bytes_sent_per_sec)
+                shift_left(user.ave_rcv_rate)
+                shift_left(user.ave_snd_rate)
                 shift_left(user.time_stamp)
 
             #relative_start_time = time.monotonic()
@@ -83,20 +90,24 @@ if __name__ == '__main__':
                     elif user.ip == pkt.source:
                         user.bytes_sent_per_sec[-1] += int(pkt.length)
             time_now = datetime.fromtimestamp(mktime(time.localtime()))
+            run_ave_period = (time_now - user.time_stamp[-run_ave_samples]).seconds #use last user's
             for user in user_list: #get time average
-                user.bytes_rcvd_per_sec[-1] /= sniff_duration#delta_time
-                user.bytes_sent_per_sec[-1] /= sniff_duration#delta_time
+                #user.bytes_rcvd_per_sec[-1] /= sniff_duration#delta_time
+                #user.bytes_sent_per_sec[-1] /= sniff_duration#delta_time
                 user.time_stamp[-1] = time_now
+                user.ave_rcv_rate[-1] = sum(user.bytes_rcvd_per_sec)/run_ave_period
+                user.ave_snd_rate[-1] = sum(user.bytes_sent_per_sec)/run_ave_period
+
                 # print('user: ',user.ip)
                 # print('rcvd: ',user.bytes_rcvd_per_sec)
                 # print('sent: ',user.bytes_sent_per_sec)
             #UPDATE PLOT
             graph.clear()   #clear the plot every iteration to give way to the new curves
-            y_max = 0
+            y_max = y_default
             for user in user_list:
-                graph.plot(mdates.date2num(user.time_stamp), user.bytes_sent_per_sec, label=user.ip + ' (sent)')
-                graph.plot(mdates.date2num(user.time_stamp), user.bytes_rcvd_per_sec, label=user.ip + ' (recv)')
-                y_max = max(user.bytes_sent_per_sec + user.bytes_rcvd_per_sec + [y_default] + [y_max])  #y_max = max(sent or received bytes or y_default)
+                graph.plot(mdates.date2num(user.time_stamp), user.ave_rcv_rate, label=user.ip + ' (sent)')
+                graph.plot(mdates.date2num(user.time_stamp), user.ave_snd_rate, label=user.ip + ' (rcvd)')
+                y_max = max(user.ave_rcv_rate + user.ave_snd_rate + [y_max])  #y_max = max(sent or received bytes or y_default)
                 plt.ylim(0, y_max + int(0.1*y_max))
 
             plt.title('Wifi Usage per IP')# please add plot title here
