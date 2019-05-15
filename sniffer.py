@@ -1,3 +1,9 @@
+"""
+    A project on ECE 151, 2nd Semester 2019
+    Developed by:   Aerjay Castaneda
+                    Christopher Jeff Sanchez
+                    Timothy Sitosta
+"""
 import pyshark
 import argparse
 import matplotlib.pyplot as plt
