@@ -14,9 +14,9 @@ class userData:
     #constructor
     def __init__(self, ip):
         self.ip = ip
-        self.time_stamp = []
-        self.bytes_rcvd_per_sec = []
-        self.bytes_sent_per_sec = []
+        self.timestamp = []
+        self.rcvd_Bps = []
+        self.sent_Bps = []
         self.ave_rcv_rate = []
         self.ave_snd_rate = []
 
@@ -57,63 +57,56 @@ if __name__ == '__main__':
     for ip in args.list_of_IP:
         user_list.append(userData(ip))
 
-    sniff_duration = 2  # sniffing time
+    sniff_duration = 3  # sniffing time
 
     #plotter initialization
     plt.ion()
     fig = plt.figure(figsize=(10,5))
     fig.canvas.mpl_connect('close_event',handle_close)
     graph = fig.add_subplot(111)
-    window_size = int(60*1/sniff_duration) # 5 minutes
-    #window_size =  5# test
+    window_size = int(60*5/sniff_duration) # 5 minutes
     y_default = 100     #when the y-values inside the window < y_default, the y-axis maximum = y_default (i.e. minimum y_axis range)
     #graph.axis([0, window_size+100, 0, y_default])  #setting the initial plot dimensions
 
     time_now = datetime.fromtimestamp(mktime(time.localtime()))
-    run_ave_samples = 5
+    run_ave_samples = 3
     for user in user_list:  #initialize/reset, +1 because 0 @ 0th place
-        user.bytes_rcvd_per_sec.extend([0]*run_ave_samples)
-        user.bytes_sent_per_sec.extend([0]*run_ave_samples)
+        user.rcvd_Bps.extend([0]*run_ave_samples)
+        user.sent_Bps.extend([0]*run_ave_samples)
         user.ave_rcv_rate.extend([0]*window_size)
         user.ave_snd_rate.extend([0]*window_size)
-        user.time_stamp.extend([time_now]*window_size)
-    #start_time = time.monotonic()
+        user.timestamp.extend([time_now]*window_size)
+
     while True:
+        #start_time = time.monotonic()
         for user in user_list:
-            shift_left(user.bytes_rcvd_per_sec)
-            shift_left(user.bytes_sent_per_sec)
+            shift_left(user.rcvd_Bps)
+            shift_left(user.sent_Bps)
             shift_left(user.ave_rcv_rate)
             shift_left(user.ave_snd_rate)
-            shift_left(user.time_stamp)
+            shift_left(user.timestamp)
 
-        #relative_start_time = time.monotonic()
         cap.sniff(timeout=sniff_duration)
-        #delta_time = time.monotonic() - relative_start_time
         captured_packets = cap._packets
         for pkt in captured_packets: #iterate through all sniffed packet
             for user in user_list:  #iterate through user user_list
                 if user.ip == pkt.destination:
-                    user.bytes_rcvd_per_sec[-1] += int(pkt.length)
+                    user.rcvd_Bps[-1] += int(pkt.length)
                 elif user.ip == pkt.source:
-                    user.bytes_sent_per_sec[-1] += int(pkt.length)
+                    user.sent_Bps[-1] += int(pkt.length)
         time_now = datetime.fromtimestamp(mktime(time.localtime()))
-        run_ave_period = (time_now - user.time_stamp[-run_ave_samples]).seconds #use last user's
+        run_ave_period = (time_now - user.timestamp[-run_ave_samples-1]).seconds #use last user's
         for user in user_list: #get time average
-            #user.bytes_rcvd_per_sec[-1] /= sniff_duration#delta_time
-            #user.bytes_sent_per_sec[-1] /= sniff_duration#delta_time
-            user.time_stamp[-1] = time_now
-            user.ave_rcv_rate[-1] = sum(user.bytes_rcvd_per_sec)/run_ave_period
-            user.ave_snd_rate[-1] = sum(user.bytes_sent_per_sec)/run_ave_period
+            user.timestamp[-1] = time_now
+            user.ave_rcv_rate[-1] = sum(user.rcvd_Bps)/run_ave_period
+            user.ave_snd_rate[-1] = sum(user.sent_Bps)/run_ave_period
 
-            # print('user: ',user.ip)
-            # print('rcvd: ',user.bytes_rcvd_per_sec)
-            # print('sent: ',user.bytes_sent_per_sec)
         #UPDATE PLOT
         graph.clear()   #clear the plot every iteration to give way to the new curves
         y_max = y_default
         for user in user_list:
-            graph.plot(mdates.date2num(user.time_stamp), user.ave_rcv_rate, label=user.ip + ' (sent)')
-            graph.plot(mdates.date2num(user.time_stamp), user.ave_snd_rate, label=user.ip + ' (rcvd)')
+            graph.plot(mdates.date2num(user.timestamp), user.ave_rcv_rate, label=user.ip + ' (rcvd)')
+            graph.plot(mdates.date2num(user.timestamp), user.ave_snd_rate, label=user.ip + ' (sent)')
             y_max = max(user.ave_rcv_rate + user.ave_snd_rate + [y_max])  #y_max = max(sent or received bytes or y_default)
             plt.ylim(0, y_max + int(0.1*y_max))
 
@@ -132,3 +125,4 @@ if __name__ == '__main__':
         plt.pause(0.001) # needed to be able to see plot
 
         cap.clear()
+        #print('Loop time: ',time.monotonic() - start_time)
