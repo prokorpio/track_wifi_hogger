@@ -66,7 +66,6 @@ if __name__ == '__main__':
     graph = fig.add_subplot(111)
     window_size = int(60*5/sniff_duration) # 5 minutes
     y_default = 100     #when the y-values inside the window < y_default, the y-axis maximum = y_default (i.e. minimum y_axis range)
-    #graph.axis([0, window_size+100, 0, y_default])  #setting the initial plot dimensions
 
     time_now = datetime.fromtimestamp(mktime(time.localtime()))
     run_ave_samples = 3
@@ -78,7 +77,6 @@ if __name__ == '__main__':
         user.timestamp.extend([time_now]*window_size)
 
     while True:
-        #start_time = time.monotonic()
         for user in user_list:
             shift_left(user.rcvd_Bps)
             shift_left(user.sent_Bps)
@@ -125,4 +123,3 @@ if __name__ == '__main__':
         plt.pause(0.001) # needed to be able to see plot
 
         cap.clear()
-        #print('Loop time: ',time.monotonic() - start_time)
